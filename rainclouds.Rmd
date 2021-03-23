@@ -9,7 +9,7 @@ output:
         highlight: kate
         code_folding: false  
         toc: true            
-        toc_depth: 2         
+        toc_depth: 3        
 ---
 
 ```{r setup, include=FALSE}
@@ -46,10 +46,19 @@ g1
 ### as jitter
 
 ```{r}
-g1 + geom_jitter(alpha = .7)
+g1 + geom_point(alpha = .7, position = position_jitter(seed = 1))
 ```
 
-### as sina to ensure points are inside violin
+... does look messy. One can play around with width but likely that it will never look clean.
+
+```{r}
+g1 + geom_point(alpha = .7, width = .1, position = position_jitter(seed = 1))
+```
+
+
+### as sina 
+
+A sina ensures that the points are placed inside the violin. The [ggforce](https://ggforce.data-imaginist.com/) package comes with a `geom_sina()` function.
 
 ```{r}
 g1 + ggforce::geom_sina(method = "counts", alpha = .5)
@@ -57,14 +66,16 @@ g1 + ggforce::geom_sina(method = "counts", alpha = .5)
 
 ### as quasirandom distribution
 
+Similarly, one can use the quasirandom geom from the [ggbeeswarm](https://github.com/eclarke/ggbeeswarm) package to reduce overplotting within categories:
+
 ```{r}
 g1 + ggbeeswarm::geom_quasirandom(width = .3, alpha = .5, varwidth = TRUE, size = 2)
 ```
 
 
-### as beeswarm to order points 
+### as beeswarm
 
-*(but note that it bins the data)*
+... or true beeswarms from the same package—*but note that it bins the data*.
 
 ```{r}
 g1 + ggbeeswarm::geom_beeswarm(width = .3, alpha = .5, cex = 1.2, size = 2)
@@ -73,7 +84,14 @@ g1 + ggbeeswarm::geom_beeswarm(width = .3, alpha = .5, cex = 1.2, size = 2)
 
 ## Raincloud plots
 
+We can combine a (half) violin with a summary plot (usually parts of a boxplot) and at thesame time show the raw data. This chart is called [raincloud plot](https://wellcomeopenresearch.org/articles/4-63).
+
 ### with linerange + dotplot
+
+It is straightforard to build a verison of a raincloud plot with the [ggdist]() package. Here we use the `stat_halfeye` fucntion that draws a (half) violin and an interval slab to highlight important summary stats. 
+I like the appearance a lot but *note that the errorbar style might be confusing* (and it was actually build to display confidence intervals).
+
+We can combine this geom, scaled to show median, IQR and full range of the data (via `.width`), with `stat_dots` that draws a dot plot showing the raw data.
 
 ```{r}
 ggplot(iris, aes(Species, Sepal.Width)) + 
@@ -83,6 +101,8 @@ ggplot(iris, aes(Species, Sepal.Width)) +
 
 ### with boxplot + dotplot
 
+We can replace the interval slab by a boxplot. We add some justification to the halfeye as well so the boxplot gets some space to fit in-between the **cloud** and the **rain**.
+
 ```{r}
 ggplot(iris, aes(Species, Sepal.Width)) + 
   ggdist::stat_halfeye(adjust = .5, width = .3, .width = 0, justification = -.3, point_colour = NA) + 
@@ -90,7 +110,11 @@ ggplot(iris, aes(Species, Sepal.Width)) +
   ggdist::stat_dots(side = "left", dotsize = .3, justification = 1.1, binwidth = .1)
 ```
 
-## with boxplot + jitter (on top)
+(You can also use `gghalves::geom_half_dotplot(stackdir = "down")` to draw the dotplot.)
+
+### with boxplot + jitter (on top)
+
+Of course, if you don't like the binning of the data points, one can use a classical jitter.
 
 ```{r}
 ggplot(iris, aes(Species, Sepal.Width)) + 
@@ -99,7 +123,11 @@ ggplot(iris, aes(Species, Sepal.Width)) +
   geom_jitter(width = .05, alpha = .3)
 ```
 
+However, (as far as I know) there is no way to justify the jitter so it's shown next to the boxplot.
+
 ### with boxplot + jitter (side by side)
+
+We can plot a side-by-side combination of jitter and boxplot with help of the [gghalves](https://erocoar.github.io/gghalves/) package.
 
 ```{r}
 ggplot(iris, aes(Species, Sepal.Width)) + 
@@ -107,4 +135,27 @@ ggplot(iris, aes(Species, Sepal.Width)) +
   geom_boxplot(width = .1, outlier.shape = NA) +
   gghalves::geom_half_point(side = "l", range_scale = .4, alpha = .5)
 ```
+
+### with boxplot + barcode (side by side)
+
+By repalcing the shape and restricting the range of the jitter, we can also turn it into a barcode plot:
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .3, .width = 0, justification = -.3, point_colour = NA) + 
+  geom_boxplot(width = .1, outlier.shape = NA) +
+  gghalves::geom_half_point(side = "l", range_scale = 0, shape = 95, size = 15, alpha = .3)
+```
+
+***
+
+<details><summary>Session Info</summary>
+
+```{r sessionInfo}
+Sys.time()
+git2r::repository()
+sessionInfo()
+```
+
+</details>
 
