@@ -1,0 +1,110 @@
+---
+title: "Raincloud Plots with ggplot2" 
+author:
+    - name: "Cédric Scherer"
+      url: https://cedricscherer.com
+date: "`r Sys.Date()`"
+output: 
+    distill::distill_article:
+        highlight: kate
+        code_folding: false  
+        toc: true            
+        toc_depth: 2         
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = TRUE, message = TRUE,
+                      fig.width = 8, fig.height = 6, dpi = 500)
+```
+
+# Packages
+
+```{r}
+library(ggplot2)
+library(ggforce)
+library(ggdist)
+library(gghalves)
+
+theme_set(theme_light(base_size = 16))
+```
+
+# Plots
+
+## Violin-boxplot-combination
+
+```{r}
+g1 <- 
+  ggplot(iris, aes(Species, Sepal.Width)) + 
+  geom_violin(fill = "grey90") + 
+  geom_boxplot(width = .2, outlier.shape = NA, coef = 0)
+
+g1
+```
+
+## Better: add raw data 
+
+### as jitter
+
+```{r}
+g1 + geom_jitter(alpha = .7)
+```
+
+### as sina to ensure points are inside violin
+
+```{r}
+g1 + ggforce::geom_sina(method = "counts", alpha = .5)
+```
+
+### as quasirandom distribution
+
+```{r}
+g1 + ggbeeswarm::geom_quasirandom(width = .3, alpha = .5, varwidth = TRUE, size = 2)
+```
+
+
+### as beeswarm to order points 
+
+*(but note that it bins the data)*
+
+```{r}
+g1 + ggbeeswarm::geom_beeswarm(width = .3, alpha = .5, cex = 1.2, size = 2)
+```
+
+
+## Raincloud plots
+
+### with linerange + dotplot
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .3, .width = c(0.5, 1)) + 
+  ggdist::stat_dots(side = "left", dotsize = .4, justification = 1.05, binwidth = .1)
+```
+
+### with boxplot + dotplot
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .3, .width = 0, justification = -.3, point_colour = NA) + 
+  geom_boxplot(width = .1, outlier.shape = NA) +
+  ggdist::stat_dots(side = "left", dotsize = .3, justification = 1.1, binwidth = .1)
+```
+
+## with boxplot + jitter (on top)
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .7, .width = 0, justification = -.2, point_colour = NA) + 
+  geom_boxplot(width = .2, outlier.shape = NA) + 
+  geom_jitter(width = .05, alpha = .3)
+```
+
+### with boxplot + jitter (side by side)
+
+```{r}
+ggplot(iris, aes(Species, Sepal.Width)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .3, .width = 0, justification = -.3, point_colour = NA) + 
+  geom_boxplot(width = .1, outlier.shape = NA) +
+  gghalves::geom_half_point(side = "l", range_scale = .4, alpha = .5)
+```
+
